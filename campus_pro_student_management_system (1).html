@@ -1,0 +1,2569 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAMPUS PRO | Enterprise Student Management System</title>
+    <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS (Excel Export) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- jsPDF & AutoTable (PDF Export) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        navy: {
+                            950: '#040711',
+                            900: '#080d1d',
+                            800: '#0f172a',
+                            700: '#1e293b',
+                        },
+                        brand: {
+                            cyan: '#06b6d4',
+                            blue: '#3b82f6',
+                            indigo: '#6366f1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Glassmorphism & Theme Styling */
+        :root {
+            --accent-primary: #06b6d4;
+            --accent-secondary: #3b82f6;
+            --bg-main: #040711;
+            --glass-bg: rgba(15, 23, 42, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: #f8fafc;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(6, 182, 212, 0.08) 0%, transparent 45%),
+                radial-gradient(circle at 85% 80%, rgba(59, 130, 246, 0.08) 0%, transparent 45%);
+            background-attachment: fixed;
+        }
+
+        /* Theme Variants */
+        body.theme-emerald {
+            --accent-primary: #10b981;
+            --accent-secondary: #059669;
+        }
+        body.theme-violet {
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #6366f1;
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
+        }
+
+        .glass-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.45) 0%, rgba(15, 23, 42, 0.65) 100%);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(6, 182, 212, 0.35);
+            box-shadow: 0 12px 30px -10px rgba(6, 182, 212, 0.2);
+        }
+
+        .brand-gradient {
+            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+        }
+
+        .brand-text-gradient {
+            background: linear-gradient(135deg, #22d3ee 0%, #60a5fa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #080d1d;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+
+        /* Animations */
+        @keyframes fadeInSlide {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-view {
+            animation: fadeInSlide 0.35s ease-out forwards;
+        }
+
+        /* Print Styles for Fee Receipts */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printable-receipt-area, #printable-receipt-area * {
+                visibility: visible;
+            }
+            #printable-receipt-area {
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white !important;
+                color: black !important;
+                padding: 24px;
+                box-shadow: none !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-cyan-500/30 selection:text-cyan-200">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-[100] flex flex-col gap-3 pointer-events-none"></div>
+
+    <!-- Custom Confirmation Dialog Modal -->
+    <div id="confirm-modal" class="fixed inset-0 z-[90] hidden items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+        <div class="glass-panel rounded-2xl max-w-md w-full p-6 border border-rose-500/30 shadow-2xl transform transition-all">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
+                    <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h3 id="confirm-title" class="text-lg font-bold text-white">Confirm Deletion</h3>
+                    <p id="confirm-message" class="text-sm text-slate-400 mt-1">Are you sure you want to delete this record? This action cannot be undone.</p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button id="confirm-cancel-btn" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium transition">Cancel</button>
+                <button id="confirm-ok-btn" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-semibold shadow-lg shadow-rose-600/25 transition">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== LOGIN SCREEN ==================== -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+        <!-- Decorative Ambient Orbs -->
+        <div class="absolute top-1/4 -left-20 w-96 h-96 bg-cyan-500/15 rounded-full blur-[120px] pointer-events-none"></div>
+        <div class="absolute bottom-1/4 -right-20 w-96 h-96 bg-blue-600/15 rounded-full blur-[120px] pointer-events-none"></div>
+
+        <div class="glass-panel rounded-3xl max-w-md w-full p-8 sm:p-10 relative z-10 border border-white/10">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl brand-gradient shadow-xl shadow-cyan-500/20 mb-4">
+                    <i data-lucide="graduation-cap" class="w-9 h-9 text-white"></i>
+                </div>
+                <h1 class="text-3xl font-display font-extrabold tracking-tight text-white">CAMPUS <span class="brand-text-gradient">PRO</span></h1>
+                <p class="text-slate-400 text-sm mt-2">Enterprise Academic & Institutional Suite</p>
+            </div>
+
+            <form id="login-form" class="space-y-5">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Administrator Email</label>
+                    <div class="relative">
+                        <i data-lucide="mail" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5"></i>
+                        <input type="email" id="login-email" value="admin@campuspro.edu" required
+                            class="w-full bg-slate-900/80 border border-slate-700/80 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Access Password</label>
+                    <div class="relative">
+                        <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5"></i>
+                        <input type="password" id="login-password" value="admin123" required
+                            class="w-full bg-slate-900/80 border border-slate-700/80 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between text-xs text-slate-400">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked class="rounded border-slate-700 bg-slate-800 text-cyan-500 focus:ring-cyan-500">
+                        <span>Keep session active</span>
+                    </label>
+                    <span class="text-cyan-400 font-medium">Demo Credentials Pre-filled</span>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 rounded-xl brand-gradient text-white font-semibold text-sm shadow-lg shadow-cyan-500/25 hover:opacity-95 active:scale-[0.99] transition flex items-center justify-center gap-2">
+                    <span>Launch Admin Console</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+            </form>
+
+            <div class="mt-6 pt-5 border-t border-white/5 text-center">
+                <p class="text-xs text-slate-500">v4.2 Commercial Edition • End-to-End Cloud Sync</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MAIN APPLICATION SHELL ==================== -->
+    <div id="app-shell" class="hidden min-h-screen flex">
+        
+        <!-- Mobile Sidebar Backdrop -->
+        <div id="sidebar-backdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-30 hidden lg:hidden"></div>
+
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="fixed lg:sticky top-0 left-0 z-40 h-screen w-72 glass-panel border-r border-white/5 flex flex-col transition-transform duration-300 -translate-x-full lg:translate-x-0">
+            <!-- Brand Header -->
+            <div class="p-6 flex items-center justify-between border-b border-white/5">
+                <div class="flex items-center gap-3">
+                    <div id="sidebar-logo-box" class="w-10 h-10 rounded-xl brand-gradient flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0">
+                        <i data-lucide="graduation-cap" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <span id="sidebar-school-name" class="font-display font-extrabold text-lg tracking-tight text-white block leading-none">CAMPUS PRO</span>
+                        <span class="text-[11px] font-medium text-cyan-400 tracking-wider uppercase mt-1 block">Enterprise Edition</span>
+                    </div>
+                </div>
+                <button onclick="toggleMobileSidebar()" class="lg:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="flex-1 overflow-y-auto px-4 py-5 space-y-1.5" id="sidebar-nav">
+                <button data-tab="dashboard" class="nav-item active w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium transition-all">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span>Dashboard Overview</span>
+                </button>
+                <button data-tab="students" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium transition-all">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    <span>Student Management</span>
+                </button>
+                <button data-tab="fees" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium transition-all">
+                    <i data-lucide="wallet" class="w-5 h-5"></i>
+                    <span>Fee & Billing</span>
+                </button>
+                <button data-tab="attendance" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium transition-all">
+                    <i data-lucide="calendar-check" class="w-5 h-5"></i>
+                    <span>Attendance Tracker</span>
+                </button>
+                <button data-tab="teachers" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium transition-all">
+                    <i data-lucide="briefcase" class="w-5 h-5"></i>
+                    <span>Faculty & Teachers</span>
+                </button>
+                <button data-tab="classes" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium transition-all">
+                    <i data-lucide="book-open" class="w-5 h-5"></i>
+                    <span>Classes & Subjects</span>
+                </button>
+                <button data-tab="exams" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium transition-all">
+                    <i data-lucide="award" class="w-5 h-5"></i>
+                    <span>Examinations & Results</span>
+                </button>
+                <button data-tab="reports" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium transition-all">
+                    <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+                    <span>Analytics & Reports</span>
+                </button>
+                <button data-tab="settings" class="nav-item w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium transition-all">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                    <span>System Settings</span>
+                </button>
+            </nav>
+
+            <!-- Cloud Sync Status & Logout -->
+            <div class="p-4 border-t border-white/5 space-y-3">
+                <div class="px-3.5 py-2.5 rounded-xl bg-slate-900/70 border border-white/5 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span id="sync-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span id="sync-status-text" class="text-xs font-medium text-slate-300">Cloud Synced</span>
+                    </div>
+                    <span class="text-[10px] px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 font-semibold">DEMO DATA</span>
+                </div>
+                <button onclick="handleLogout()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-sm font-medium transition">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                    <span>Sign Out</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col min-w-0">
+            
+            <!-- Top Navigation Header -->
+            <header class="sticky top-0 z-20 glass-panel border-b border-white/5 px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleMobileSidebar()" class="lg:hidden p-2.5 rounded-xl bg-slate-800/80 text-slate-300 hover:text-white">
+                        <i data-lucide="menu" class="w-5 h-5"></i>
+                    </button>
+                    <div>
+                        <h2 id="page-title" class="text-xl sm:text-2xl font-display font-bold text-white">Dashboard Overview</h2>
+                        <p id="page-subtitle" class="text-xs text-slate-400 hidden sm:block">Real-time institutional metrics, admissions & financial health</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 sm:gap-4">
+                    <!-- Quick Global Search -->
+                    <div class="relative hidden md:block">
+                        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5"></i>
+                        <input type="text" id="global-quick-search" placeholder="Quick find student..." onkeyup="handleGlobalSearch(this.value)"
+                            class="w-60 bg-slate-900/70 border border-slate-700/70 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition">
+                    </div>
+
+                    <!-- Academic Year Badge -->
+                    <div class="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900/80 border border-white/5 text-xs font-medium text-slate-300">
+                        <i data-lucide="calendar" class="w-3.5 h-3.5 text-cyan-400"></i>
+                        <span id="header-academic-year">Session 2026-2027</span>
+                    </div>
+
+                    <!-- Admin Profile Pill -->
+                    <div class="flex items-center gap-2.5 pl-2 border-l border-white/10">
+                        <div class="w-9 h-9 rounded-xl brand-gradient flex items-center justify-center font-bold text-sm text-white shadow-md">
+                            AD
+                        </div>
+                        <div class="hidden sm:block text-left">
+                            <p class="text-xs font-semibold text-white leading-tight">Dr. Alexander Vance</p>
+                            <p class="text-[11px] text-cyan-400">Principal / Admin</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dynamic View Container -->
+            <main class="flex-1 p-4 sm:p-8 max-w-[1600px] w-full mx-auto">
+
+                <!-- ==================== 1. DASHBOARD VIEW ==================== -->
+                <section id="view-dashboard" class="view-section animate-view space-y-6">
+                    <!-- KPI Cards Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+                        <!-- Total Students -->
+                        <div class="glass-card rounded-2xl p-6 relative overflow-hidden">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Students</p>
+                                    <h3 id="stat-total-students" class="text-3xl font-display font-extrabold text-white mt-2">0</h3>
+                                    <p class="text-xs text-emerald-400 flex items-center gap-1 mt-2 font-medium">
+                                        <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
+                                        <span>Active Enrolled</span>
+                                    </p>
+                                </div>
+                                <div class="w-12 h-12 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                                    <i data-lucide="users" class="w-6 h-6"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Total Teachers -->
+                        <div class="glass-card rounded-2xl p-6 relative overflow-hidden">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Faculty Members</p>
+                                    <h3 id="stat-total-teachers" class="text-3xl font-display font-extrabold text-white mt-2">0</h3>
+                                    <p class="text-xs text-blue-400 flex items-center gap-1 mt-2 font-medium">
+                                        <i data-lucide="award" class="w-3.5 h-3.5"></i>
+                                        <span>Certified Educators</span>
+                                    </p>
+                                </div>
+                                <div class="w-12 h-12 rounded-2xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                                    <i data-lucide="briefcase" class="w-6 h-6"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Collected Fees -->
+                        <div class="glass-card rounded-2xl p-6 relative overflow-hidden">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Collected Fees</p>
+                                    <h3 id="stat-collected-fees" class="text-3xl font-display font-extrabold text-white mt-2">$0</h3>
+                                    <p class="text-xs text-emerald-400 flex items-center gap-1 mt-2 font-medium">
+                                        <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                                        <span>Verified Revenue</span>
+                                    </p>
+                                </div>
+                                <div class="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                                    <i data-lucide="dollar-sign" class="w-6 h-6"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pending Fees -->
+                        <div class="glass-card rounded-2xl p-6 relative overflow-hidden">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Pending Balances</p>
+                                    <h3 id="stat-pending-fees" class="text-3xl font-display font-extrabold text-white mt-2">$0</h3>
+                                    <p class="text-xs text-amber-400 flex items-center gap-1 mt-2 font-medium">
+                                        <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                                        <span>Outstanding Dues</span>
+                                    </p>
+                                </div>
+                                <div class="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                                    <i data-lucide="alert-circle" class="w-6 h-6"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Row -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="glass-panel rounded-2xl p-6 lg:col-span-2">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <h4 class="text-base font-bold text-white">Revenue & Fee Collection Analytics</h4>
+                                    <p class="text-xs text-slate-400">Monthly collected vs pending fee comparison</p>
+                                </div>
+                                <span class="text-xs px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-medium">Live Metrics</span>
+                            </div>
+                            <div class="h-72 w-full">
+                                <canvas id="feeChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="glass-panel rounded-2xl p-6">
+                            <div class="mb-4">
+                                <h4 class="text-base font-bold text-white">Today's Attendance Breakdown</h4>
+                                <p class="text-xs text-slate-400">Campus-wide student presence ratio</p>
+                            </div>
+                            <div class="h-60 w-full flex items-center justify-center">
+                                <canvas id="attendanceChart"></canvas>
+                            </div>
+                            <div id="attendance-summary-pills" class="grid grid-cols-3 gap-2 mt-4 text-center text-xs"></div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Admissions & Quick Actions -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="glass-panel rounded-2xl p-6 lg:col-span-2">
+                            <div class="flex items-center justify-between mb-4">
+                                <h4 class="text-base font-bold text-white">Recent Student Admissions</h4>
+                                <button onclick="switchTab('students')" class="text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition">View All Students →</button>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="border-b border-white/10 text-[11px] uppercase tracking-wider text-slate-400">
+                                            <th class="pb-3 font-semibold">Student</th>
+                                            <th class="pb-3 font-semibold">Admission ID</th>
+                                            <th class="pb-3 font-semibold">Class</th>
+                                            <th class="pb-3 font-semibold">Admission Date</th>
+                                            <th class="pb-3 font-semibold text-right">Fee Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dashboard-recent-admissions" class="divide-y divide-white/5 text-sm"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Quick Launchpad -->
+                        <div class="glass-panel rounded-2xl p-6 flex flex-col justify-between">
+                            <div>
+                                <h4 class="text-base font-bold text-white mb-1">Quick Command Center</h4>
+                                <p class="text-xs text-slate-400 mb-5">Instant administrative workflows</p>
+                                <div class="space-y-3">
+                                    <button onclick="switchTab('students'); openStudentModal();" class="w-full p-3.5 rounded-xl bg-slate-800/70 hover:bg-cyan-500/15 border border-white/5 hover:border-cyan-500/30 flex items-center gap-3 text-left transition group">
+                                        <div class="w-9 h-9 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center group-hover:scale-105 transition">
+                                            <i data-lucide="user-plus" class="w-4 h-4"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-semibold text-white">New Student Admission</p>
+                                            <p class="text-[11px] text-slate-400">Enroll student & generate ID</p>
+                                        </div>
+                                    </button>
+                                    <button onclick="switchTab('fees'); openFeeModal();" class="w-full p-3.5 rounded-xl bg-slate-800/70 hover:bg-emerald-500/15 border border-white/5 hover:border-emerald-500/30 flex items-center gap-3 text-left transition group">
+                                        <div class="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-105 transition">
+                                            <i data-lucide="receipt" class="w-4 h-4"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-semibold text-white">Collect Tuition Fee</p>
+                                            <p class="text-[11px] text-slate-400">Record payment & print receipt</p>
+                                        </div>
+                                    </button>
+                                    <button onclick="switchTab('attendance')" class="w-full p-3.5 rounded-xl bg-slate-800/70 hover:bg-blue-500/15 border border-white/5 hover:border-blue-500/30 flex items-center gap-3 text-left transition group">
+                                        <div class="w-9 h-9 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center group-hover:scale-105 transition">
+                                            <i data-lucide="check-square" class="w-4 h-4"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-semibold text-white">Mark Daily Attendance</p>
+                                            <p class="text-[11px] text-slate-400">Update class presence registers</p>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mt-6 pt-4 border-t border-white/5 text-[11px] text-slate-400 flex items-center justify-between">
+                                <span>Database Status: Healthy</span>
+                                <span class="text-cyan-400 font-semibold">Auto-Backup ON</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==================== 2. STUDENT MANAGEMENT VIEW ==================== -->
+                <section id="view-students" class="view-section hidden animate-view space-y-6">
+                    <div class="glass-panel rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex flex-wrap items-center gap-3 flex-1">
+                            <div class="relative flex-1 min-w-[220px] max-w-md">
+                                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+                                <input type="text" id="student-search" placeholder="Search by name, roll no, or guardian..." oninput="renderStudentsTable()"
+                                    class="w-full bg-slate-900/80 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                            </div>
+                            <select id="student-class-filter" onchange="renderStudentsTable()" class="bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-cyan-500">
+                                <option value="ALL">All Classes</option>
+                            </select>
+                        </div>
+                        <button onclick="openStudentModal()" class="px-5 py-2.5 rounded-xl brand-gradient text-white text-sm font-semibold shadow-lg shadow-cyan-500/20 hover:opacity-95 transition flex items-center gap-2 shrink-0">
+                            <i data-lucide="user-plus" class="w-4 h-4"></i>
+                            <span>Add New Student</span>
+                        </button>
+                    </div>
+
+                    <div class="glass-panel rounded-2xl overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-900/70 border-b border-white/10 text-xs uppercase tracking-wider text-slate-400">
+                                        <th class="py-4 px-6 font-semibold">Student Info</th>
+                                        <th class="py-4 px-6 font-semibold">Roll / ID</th>
+                                        <th class="py-4 px-6 font-semibold">Class & Section</th>
+                                        <th class="py-4 px-6 font-semibold">Guardian & Phone</th>
+                                        <th class="py-4 px-6 font-semibold">Admission Date</th>
+                                        <th class="py-4 px-6 font-semibold text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="students-table-body" class="divide-y divide-white/5 text-sm"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==================== 3. FEE MANAGEMENT VIEW ==================== -->
+                <section id="view-fees" class="view-section hidden animate-view space-y-6">
+                    <!-- Fee KPI Strip -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                        <div class="glass-card rounded-2xl p-5">
+                            <p class="text-xs text-slate-400 uppercase font-semibold">Total Billed Amount</p>
+                            <h3 id="fee-kpi-total" class="text-2xl font-display font-bold text-white mt-1">$0</h3>
+                        </div>
+                        <div class="glass-card rounded-2xl p-5">
+                            <p class="text-xs text-slate-400 uppercase font-semibold">Total Collected</p>
+                            <h3 id="fee-kpi-paid" class="text-2xl font-display font-bold text-emerald-400 mt-1">$0</h3>
+                        </div>
+                        <div class="glass-card rounded-2xl p-5">
+                            <p class="text-xs text-slate-400 uppercase font-semibold">Remaining Balance</p>
+                            <h3 id="fee-kpi-balance" class="text-2xl font-display font-bold text-amber-400 mt-1">$0</h3>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex flex-wrap items-center gap-3 flex-1">
+                            <div class="relative flex-1 min-w-[220px] max-w-md">
+                                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+                                <input type="text" id="fee-search" placeholder="Search invoice ID or student name..." oninput="renderFeesTable()"
+                                    class="w-full bg-slate-900/80 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                            </div>
+                            <select id="fee-status-filter" onchange="renderFeesTable()" class="bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-cyan-500">
+                                <option value="ALL">All Statuses</option>
+                                <option value="Paid">Paid</option>
+                                <option value="Partial">Partial</option>
+                                <option value="Unpaid">Unpaid</option>
+                            </select>
+                        </div>
+                        <button onclick="openFeeModal()" class="px-5 py-2.5 rounded-xl brand-gradient text-white text-sm font-semibold shadow-lg shadow-cyan-500/20 hover:opacity-95 transition flex items-center gap-2 shrink-0">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                            <span>Create Fee Invoice / Payment</span>
+                        </button>
+                    </div>
+
+                    <div class="glass-panel rounded-2xl overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-900/70 border-b border-white/10 text-xs uppercase tracking-wider text-slate-400">
+                                        <th class="py-4 px-6 font-semibold">Invoice #</th>
+                                        <th class="py-4 px-6 font-semibold">Student</th>
+                                        <th class="py-4 px-6 font-semibold">Billing Month</th>
+                                        <th class="py-4 px-6 font-semibold">Total Fee</th>
+                                        <th class="py-4 px-6 font-semibold">Paid</th>
+                                        <th class="py-4 px-6 font-semibold">Balance</th>
+                                        <th class="py-4 px-6 font-semibold">Status</th>
+                                        <th class="py-4 px-6 font-semibold text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fees-table-body" class="divide-y divide-white/5 text-sm"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==================== 4. ATTENDANCE MANAGEMENT VIEW ==================== -->
+                <section id="view-attendance" class="view-section hidden animate-view space-y-6">
+                    <div class="glass-panel rounded-2xl p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <div class="flex flex-wrap items-center gap-3">
+                            <div>
+                                <label class="block text-[11px] uppercase text-slate-400 font-semibold mb-1">Attendance Date</label>
+                                <input type="date" id="attendance-date" onchange="renderAttendanceRegister()"
+                                    class="bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] uppercase text-slate-400 font-semibold mb-1">Filter Class</label>
+                                <select id="attendance-class-filter" onchange="renderAttendanceRegister()"
+                                    class="bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+                                    <option value="ALL">All Classes</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button onclick="markAllAttendance('Present')" class="px-4 py-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition">
+                                Mark All Present
+                            </button>
+                            <button onclick="saveDailyAttendance()" class="px-5 py-2.5 rounded-xl brand-gradient text-white text-sm font-semibold shadow-lg shadow-cyan-500/20 hover:opacity-95 transition flex items-center gap-2">
+                                <i data-lucide="save" class="w-4 h-4"></i>
+                                <span>Save Attendance Sheet</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Daily Summary Bar -->
+                    <div id="attendance-stats-bar" class="grid grid-cols-2 sm:grid-cols-4 gap-4"></div>
+
+                    <div class="glass-panel rounded-2xl overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-900/70 border-b border-white/10 text-xs uppercase tracking-wider text-slate-400">
+                                        <th class="py-4 px-6 font-semibold">Roll No</th>
+                                        <th class="py-4 px-6 font-semibold">Student Name</th>
+                                        <th class="py-4 px-6 font-semibold">Class</th>
+                                        <th class="py-4 px-6 font-semibold">Overall Attendance %</th>
+                                        <th class="py-4 px-6 font-semibold text-right">Mark Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="attendance-table-body" class="divide-y divide-white/5 text-sm"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==================== 5. TEACHER MANAGEMENT VIEW ==================== -->
+                <section id="view-teachers" class="view-section hidden animate-view space-y-6">
+                    <div class="glass-panel rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="relative flex-1 max-w-md">
+                            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+                            <input type="text" id="teacher-search" placeholder="Search faculty by name or subject..." oninput="renderTeachersGrid()"
+                                class="w-full bg-slate-900/80 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                        </div>
+                        <button onclick="openTeacherModal()" class="px-5 py-2.5 rounded-xl brand-gradient text-white text-sm font-semibold shadow-lg shadow-cyan-500/20 hover:opacity-95 transition flex items-center gap-2 shrink-0">
+                            <i data-lucide="user-plus" class="w-4 h-4"></i>
+                            <span>Add Faculty Member</span>
+                        </button>
+                    </div>
+
+                    <div id="teachers-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
+                </section>
+
+                <!-- ==================== 6. CLASS MANAGEMENT VIEW ==================== -->
+                <section id="view-classes" class="view-section hidden animate-view space-y-6">
+                    <div class="glass-panel rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-white">Academic Classes & Curriculum Mapping</h3>
+                            <p class="text-xs text-slate-400">Manage grade levels, sections, class teachers, and assigned subjects</p>
+                        </div>
+                        <button onclick="openClassModal()" class="px-5 py-2.5 rounded-xl brand-gradient text-white text-sm font-semibold shadow-lg shadow-cyan-500/20 hover:opacity-95 transition flex items-center gap-2 shrink-0">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            <span>Add Class / Section</span>
+                        </button>
+                    </div>
+
+                    <div id="classes-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
+                </section>
+
+                <!-- ==================== 7. EXAMINATION MANAGEMENT VIEW ==================== -->
+                <section id="view-exams" class="view-section hidden animate-view space-y-6">
+                    <div class="glass-panel rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex flex-wrap items-center gap-3 flex-1">
+                            <select id="exam-term-filter" onchange="renderExamsTable()" class="bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                                <option value="ALL">All Examinations</option>
+                                <option value="Mid-Term Examination 2026">Mid-Term Examination 2026</option>
+                                <option value="Final Term Assessment 2026">Final Term Assessment 2026</option>
+                            </select>
+                            <input type="text" id="exam-search" placeholder="Search student result..." oninput="renderExamsTable()"
+                                class="bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                        </div>
+                        <button onclick="openExamModal()" class="px-5 py-2.5 rounded-xl brand-gradient text-white text-sm font-semibold shadow-lg shadow-cyan-500/20 hover:opacity-95 transition flex items-center gap-2 shrink-0">
+                            <i data-lucide="award" class="w-4 h-4"></i>
+                            <span>Record Exam Marks</span>
+                        </button>
+                    </div>
+
+                    <div class="glass-panel rounded-2xl overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-900/70 border-b border-white/10 text-xs uppercase tracking-wider text-slate-400">
+                                        <th class="py-4 px-6 font-semibold">Student</th>
+                                        <th class="py-4 px-6 font-semibold">Exam Name</th>
+                                        <th class="py-4 px-6 font-semibold">Subject</th>
+                                        <th class="py-4 px-6 font-semibold">Marks Obtained</th>
+                                        <th class="py-4 px-6 font-semibold">Percentage</th>
+                                        <th class="py-4 px-6 font-semibold">Grade</th>
+                                        <th class="py-4 px-6 font-semibold text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="exams-table-body" class="divide-y divide-white/5 text-sm"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==================== 8. REPORTS & EXPORTS VIEW ==================== -->
+                <section id="view-reports" class="view-section hidden animate-view space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Student Directory Report -->
+                        <div class="glass-card rounded-2xl p-6 flex flex-col justify-between">
+                            <div>
+                                <div class="w-12 h-12 rounded-xl bg-cyan-500/15 text-cyan-400 flex items-center justify-center mb-4">
+                                    <i data-lucide="users" class="w-6 h-6"></i>
+                                </div>
+                                <h4 class="text-lg font-bold text-white">Complete Student Directory Report</h4>
+                                <p class="text-sm text-slate-400 mt-1">Export full enrollment records, admission IDs, guardian contact details, and assigned classes.</p>
+                            </div>
+                            <div class="flex flex-wrap gap-3 mt-6 pt-4 border-t border-white/5">
+                                <button onclick="exportReportPDF('students')" class="flex-1 py-2.5 px-4 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-semibold flex items-center justify-center gap-2 transition">
+                                    <i data-lucide="file-text" class="w-4 h-4"></i> Export PDF
+                                </button>
+                                <button onclick="exportReportExcel('students')" class="flex-1 py-2.5 px-4 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center justify-center gap-2 transition">
+                                    <i data-lucide="sheet" class="w-4 h-4"></i> Export Excel (.xlsx)
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Financial & Fee Collection Report -->
+                        <div class="glass-card rounded-2xl p-6 flex flex-col justify-between">
+                            <div>
+                                <div class="w-12 h-12 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center mb-4">
+                                    <i data-lucide="wallet" class="w-6 h-6"></i>
+                                </div>
+                                <h4 class="text-lg font-bold text-white">Financial & Fee Collection Ledger</h4>
+                                <p class="text-sm text-slate-400 mt-1">Detailed breakdown of paid invoices, partial installments, and outstanding student balances.</p>
+                            </div>
+                            <div class="flex flex-wrap gap-3 mt-6 pt-4 border-t border-white/5">
+                                <button onclick="exportReportPDF('fees')" class="flex-1 py-2.5 px-4 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-semibold flex items-center justify-center gap-2 transition">
+                                    <i data-lucide="file-text" class="w-4 h-4"></i> Export PDF
+                                </button>
+                                <button onclick="exportReportExcel('fees')" class="flex-1 py-2.5 px-4 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center justify-center gap-2 transition">
+                                    <i data-lucide="sheet" class="w-4 h-4"></i> Export Excel (.xlsx)
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Examination Performance Report -->
+                        <div class="glass-card rounded-2xl p-6 flex flex-col justify-between">
+                            <div>
+                                <div class="w-12 h-12 rounded-xl bg-indigo-500/15 text-indigo-400 flex items-center justify-center mb-4">
+                                    <i data-lucide="award" class="w-6 h-6"></i>
+                                </div>
+                                <h4 class="text-lg font-bold text-white">Academic Examination Results Sheet</h4>
+                                <p class="text-sm text-slate-400 mt-1">Comprehensive transcript report including subject marks, calculated percentages, and grades.</p>
+                            </div>
+                            <div class="flex flex-wrap gap-3 mt-6 pt-4 border-t border-white/5">
+                                <button onclick="exportReportPDF('exams')" class="flex-1 py-2.5 px-4 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-semibold flex items-center justify-center gap-2 transition">
+                                    <i data-lucide="file-text" class="w-4 h-4"></i> Export PDF
+                                </button>
+                                <button onclick="exportReportExcel('exams')" class="flex-1 py-2.5 px-4 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center justify-center gap-2 transition">
+                                    <i data-lucide="sheet" class="w-4 h-4"></i> Export Excel (.xlsx)
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Faculty & Attendance Summary -->
+                        <div class="glass-card rounded-2xl p-6 flex flex-col justify-between">
+                            <div>
+                                <div class="w-12 h-12 rounded-xl bg-blue-500/15 text-blue-400 flex items-center justify-center mb-4">
+                                    <i data-lucide="briefcase" class="w-6 h-6"></i>
+                                </div>
+                                <h4 class="text-lg font-bold text-white">Faculty & Subject Allocation Roster</h4>
+                                <p class="text-sm text-slate-400 mt-1">Export active teaching staff profiles, qualifications, contact info, and assigned subjects.</p>
+                            </div>
+                            <div class="flex flex-wrap gap-3 mt-6 pt-4 border-t border-white/5">
+                                <button onclick="exportReportPDF('teachers')" class="flex-1 py-2.5 px-4 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-semibold flex items-center justify-center gap-2 transition">
+                                    <i data-lucide="file-text" class="w-4 h-4"></i> Export PDF
+                                </button>
+                                <button onclick="exportReportExcel('teachers')" class="flex-1 py-2.5 px-4 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center justify-center gap-2 transition">
+                                    <i data-lucide="sheet" class="w-4 h-4"></i> Export Excel (.xlsx)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==================== 9. SETTINGS VIEW ==================== -->
+                <section id="view-settings" class="view-section hidden animate-view space-y-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Institutional Profile -->
+                        <div class="glass-panel rounded-2xl p-6 lg:col-span-2">
+                            <h4 class="text-lg font-bold text-white mb-1">Institutional Profile & Branding</h4>
+                            <p class="text-xs text-slate-400 mb-6">Customize how your institution appears on dashboards and printed fee receipts</p>
+                            <form id="settings-form" class="space-y-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-400 mb-1.5">Institution Name</label>
+                                        <input type="text" id="setting-school-name" required class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-400 mb-1.5">Academic Session</label>
+                                        <input type="text" id="setting-session" required class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-400 mb-1.5">Official Contact Phone</label>
+                                        <input type="text" id="setting-phone" required class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-400 mb-1.5">Official Email Address</label>
+                                        <input type="email" id="setting-email" required class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-400 mb-1.5">Campus Address</label>
+                                    <input type="text" id="setting-address" required class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-400 mb-2">Accent Theme Palette</label>
+                                    <div class="flex flex-wrap gap-3">
+                                        <button type="button" onclick="applyTheme('cyan')" class="px-4 py-2 rounded-xl bg-cyan-500/20 border border-cyan-500 text-cyan-300 text-xs font-semibold">Cyber Cyan & Blue (Default)</button>
+                                        <button type="button" onclick="applyTheme('emerald')" class="px-4 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-semibold">Emerald & Teal</button>
+                                        <button type="button" onclick="applyTheme('violet')" class="px-4 py-2 rounded-xl bg-violet-500/20 border border-violet-500/40 text-violet-300 text-xs font-semibold">Royal Violet & Indigo</button>
+                                    </div>
+                                </div>
+                                <div class="pt-3">
+                                    <button type="submit" class="px-6 py-2.5 rounded-xl brand-gradient text-white text-sm font-semibold shadow-lg shadow-cyan-500/20 hover:opacity-95 transition">
+                                        Save Institutional Settings
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Data Backup & Demo Reset -->
+                        <div class="glass-panel rounded-2xl p-6 flex flex-col justify-between space-y-6">
+                            <div>
+                                <h4 class="text-lg font-bold text-white mb-1">Data Backup & System Reset</h4>
+                                <p class="text-xs text-slate-400 mb-5">Download a complete JSON snapshot of your database or restore demo records.</p>
+                                
+                                <div class="space-y-3">
+                                    <button onclick="downloadJSONBackup()" class="w-full py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/10 text-white text-sm font-medium flex items-center justify-center gap-2 transition">
+                                        <i data-lucide="download-cloud" class="w-4 h-4 text-cyan-400"></i>
+                                        <span>Download JSON Backup</span>
+                                    </button>
+
+                                    <button onclick="confirmResetDemoData()" class="w-full py-3 px-4 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-sm font-medium flex items-center justify-center gap-2 transition">
+                                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                                        <span>Restore Default Demo Data</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="p-4 rounded-xl bg-slate-900/80 border border-white/5 text-xs text-slate-400 space-y-1">
+                                <p class="font-semibold text-slate-200">Persistence Engine</p>
+                                <p>All student admissions, fee receipts, attendance logs, and exam grades are saved automatically to your secure cloud workspace.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- ==================== MODALS FOR CRUD OPERATIONS ==================== -->
+
+    <!-- 1. Student Add/Edit Modal -->
+    <div id="student-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto">
+        <div class="glass-panel rounded-2xl max-w-xl w-full p-6 sm:p-8 border border-white/10 my-8">
+            <div class="flex items-center justify-between mb-6">
+                <h3 id="student-modal-title" class="text-xl font-bold text-white">New Student Admission</h3>
+                <button onclick="closeModal('student-modal')" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="student-form" class="space-y-4">
+                <input type="hidden" id="student-id">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Full Name *</label>
+                        <input type="text" id="student-name" required placeholder="e.g. Sophia Martinez" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Roll / Admission No *</label>
+                        <input type="text" id="student-roll" required placeholder="e.g. CP-2026-109" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Assigned Class *</label>
+                        <select id="student-class" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Gender *</label>
+                        <select id="student-gender" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                            <option value="Female">Female</option>
+                            <option value="Male">Male</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Guardian Name *</label>
+                        <input type="text" id="student-guardian" required placeholder="Parent / Guardian Name" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Contact Phone *</label>
+                        <input type="tel" id="student-phone" required placeholder="+1 (555) 234-5678" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Admission Date *</label>
+                        <input type="date" id="student-admission-date" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Residential Address</label>
+                        <input type="text" id="student-address" placeholder="Street, City" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeModal('student-modal')" class="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-sm font-medium">Cancel</button>
+                    <button type="submit" class="px-6 py-2.5 rounded-xl brand-gradient text-white text-sm font-semibold shadow-lg shadow-cyan-500/20">Save Student Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. Student Profile Drawer/Modal -->
+    <div id="student-profile-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+        <div class="glass-panel rounded-2xl max-w-lg w-full p-6 sm:p-8 border border-cyan-500/20">
+            <div class="flex items-start justify-between mb-6">
+                <div class="flex items-center gap-4">
+                    <div id="profile-avatar" class="w-14 h-14 rounded-2xl brand-gradient flex items-center justify-center text-xl font-bold text-white">SM</div>
+                    <div>
+                        <h3 id="profile-name" class="text-xl font-bold text-white">Student Name</h3>
+                        <p id="profile-roll" class="text-xs text-cyan-400 font-semibold mt-0.5">CP-2026-001</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('student-profile-modal')" class="p-2 rounded-lg text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div id="profile-details-content" class="space-y-4 text-sm"></div>
+            <div class="mt-6 pt-4 border-t border-white/10 flex justify-end">
+                <button onclick="closeModal('student-profile-modal')" class="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium">Close Profile</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Fee Invoice / Payment Modal -->
+    <div id="fee-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+        <div class="glass-panel rounded-2xl max-w-lg w-full p-6 sm:p-8 border border-white/10">
+            <div class="flex items-center justify-between mb-6">
+                <h3 id="fee-modal-title" class="text-xl font-bold text-white">Record Fee Invoice / Payment</h3>
+                <button onclick="closeModal('fee-modal')" class="p-2 rounded-lg text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="fee-form" class="space-y-4">
+                <input type="hidden" id="fee-id">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Select Student *</label>
+                    <select id="fee-student-id" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none"></select>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Billing Month *</label>
+                        <input type="text" id="fee-month" required placeholder="e.g. November 2026" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Payment Date *</label>
+                        <input type="date" id="fee-date" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Total Monthly Fee ($) *</label>
+                        <input type="number" id="fee-total" min="1" step="0.01" required placeholder="450" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Amount Paid ($) *</label>
+                        <input type="number" id="fee-paid" min="0" step="0.01" required placeholder="450" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Payment Method</label>
+                    <select id="fee-method" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                        <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="Credit / Debit Card">Credit / Debit Card</option>
+                        <option value="Cash Counter">Cash Counter</option>
+                        <option value="Online Portal">Online Portal</option>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeModal('fee-modal')" class="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-sm font-medium">Cancel</button>
+                    <button type="submit" class="px-6 py-2.5 rounded-xl brand-gradient text-white text-sm font-semibold shadow-lg shadow-cyan-500/20">Save Fee Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 4. Printable Fee Receipt Modal -->
+    <div id="receipt-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
+        <div class="bg-white text-slate-900 rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-2xl my-8">
+            <div id="printable-receipt-area">
+                <div class="flex items-center justify-between border-b-2 border-slate-200 pb-4 mb-5">
+                    <div>
+                        <h2 id="receipt-school-name" class="text-xl font-extrabold text-slate-900 tracking-tight">CAMPUS PRO ACADEMY</h2>
+                        <p id="receipt-school-address" class="text-xs text-slate-500">1200 Innovation Drive, Silicon Valley</p>
+                        <p id="receipt-school-contact" class="text-xs text-slate-500">Tel: +1 (800) 555-0199</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-block px-3 py-1 rounded-full bg-cyan-100 text-cyan-800 text-xs font-bold uppercase">Official Receipt</span>
+                        <p id="receipt-invoice-no" class="text-sm font-bold text-slate-800 mt-1">#INV-1001</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 text-xs mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div>
+                        <p class="text-slate-400 uppercase font-semibold">Billed To</p>
+                        <p id="receipt-student-name" class="text-sm font-bold text-slate-900 mt-0.5">Student Name</p>
+                        <p id="receipt-student-class" class="text-slate-600">Grade 10 - A</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-slate-400 uppercase font-semibold">Payment Details</p>
+                        <p id="receipt-date" class="font-semibold text-slate-800 mt-0.5">Date: 2026-11-23</p>
+                        <p id="receipt-method" class="text-slate-600">Method: Bank Transfer</p>
+                    </div>
+                </div>
+
+                <table class="w-full text-left text-sm mb-6">
+                    <thead>
+                        <tr class="border-b border-slate-300 text-xs uppercase text-slate-500">
+                            <th class="py-2">Description</th>
+                            <th class="py-2 text-right">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200">
+                        <tr>
+                            <td id="receipt-desc" class="py-3 font-medium text-slate-800">Monthly Tuition Fee - Nov 2026</td>
+                            <td id="receipt-total" class="py-3 text-right font-semibold text-slate-900">$450.00</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 text-slate-600">Amount Paid</td>
+                            <td id="receipt-paid" class="py-3 text-right font-bold text-emerald-600">$450.00</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 font-bold text-slate-800">Remaining Balance</td>
+                            <td id="receipt-balance" class="py-3 text-right font-bold text-rose-600">$0.00</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="flex items-center justify-between pt-4 border-t border-slate-200 text-xs text-slate-500">
+                    <p>Status: <strong id="receipt-status" class="uppercase text-slate-900">PAID</strong></p>
+                    <p>Authorized Accounts Stamp</p>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-200 no-print">
+                <button onclick="closeModal('receipt-modal')" class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-sm font-semibold">Close</button>
+                <button onclick="window.print()" class="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-semibold flex items-center gap-2 shadow-md">
+                    <i data-lucide="printer" class="w-4 h-4"></i> Print Receipt
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. Teacher Add/Edit Modal -->
+    <div id="teacher-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+        <div class="glass-panel rounded-2xl max-w-lg w-full p-6 sm:p-8 border border-white/10">
+            <div class="flex items-center justify-between mb-6">
+                <h3 id="teacher-modal-title" class="text-xl font-bold text-white">Add Faculty Member</h3>
+                <button onclick="closeModal('teacher-modal')" class="p-2 rounded-lg text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="teacher-form" class="space-y-4">
+                <input type="hidden" id="teacher-id">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Full Name *</label>
+                        <input type="text" id="teacher-name" required placeholder="e.g. Prof. Elena Rostova" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Primary Subject *</label>
+                        <input type="text" id="teacher-subject" required placeholder="e.g. Quantum Physics" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Qualification *</label>
+                        <input type="text" id="teacher-qualification" required placeholder="e.g. Ph.D. Physics" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Assigned Classes *</label>
+                        <input type="text" id="teacher-classes" required placeholder="e.g. Grade 11-A, Grade 12-A" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Email *</label>
+                        <input type="email" id="teacher-email" required placeholder="faculty@campuspro.edu" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Phone *</label>
+                        <input type="tel" id="teacher-phone" required placeholder="+1 (555) 987-6543" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeModal('teacher-modal')" class="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-sm font-medium">Cancel</button>
+                    <button type="submit" class="px-6 py-2.5 rounded-xl brand-gradient text-white text-sm font-semibold shadow-lg shadow-cyan-500/20">Save Teacher</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 6. Class Add/Edit Modal -->
+    <div id="class-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+        <div class="glass-panel rounded-2xl max-w-lg w-full p-6 sm:p-8 border border-white/10">
+            <div class="flex items-center justify-between mb-6">
+                <h3 id="class-modal-title" class="text-xl font-bold text-white">Add Class & Section</h3>
+                <button onclick="closeModal('class-modal')" class="p-2 rounded-lg text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="class-form" class="space-y-4">
+                <input type="hidden" id="class-id">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Class Name *</label>
+                        <input type="text" id="class-name" required placeholder="e.g. Grade 10" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Section *</label>
+                        <input type="text" id="class-section" required placeholder="e.g. Section A" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Class Homeroom Teacher *</label>
+                    <input type="text" id="class-teacher" required placeholder="e.g. Dr. Marcus Vance" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Assigned Subjects (Comma Separated) *</label>
+                    <input type="text" id="class-subjects" required placeholder="Mathematics, Physics, Computer Science, English" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeModal('class-modal')" class="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-sm font-medium">Cancel</button>
+                    <button type="submit" class="px-6 py-2.5 rounded-xl brand-gradient text-white text-sm font-semibold shadow-lg shadow-cyan-500/20">Save Class</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 7. Exam Result Modal -->
+    <div id="exam-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+        <div class="glass-panel rounded-2xl max-w-lg w-full p-6 sm:p-8 border border-white/10">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-white">Record Examination Marks</h3>
+                <button onclick="closeModal('exam-modal')" class="p-2 rounded-lg text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="exam-form" class="space-y-4">
+                <input type="hidden" id="exam-id">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Select Student *</label>
+                    <select id="exam-student-id" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none"></select>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Examination Term *</label>
+                        <select id="exam-term" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                            <option value="Mid-Term Examination 2026">Mid-Term Examination 2026</option>
+                            <option value="Final Term Assessment 2026">Final Term Assessment 2026</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Subject *</label>
+                        <input type="text" id="exam-subject" required placeholder="e.g. Computer Science" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Obtained Marks *</label>
+                        <input type="number" id="exam-obtained" min="0" max="1000" required placeholder="92" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">Maximum Marks *</label>
+                        <input type="number" id="exam-total" min="1" max="1000" value="100" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-cyan-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeModal('exam-modal')" class="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-sm font-medium">Cancel</button>
+                    <button type="submit" class="px-6 py-2.5 rounded-xl brand-gradient text-white text-sm font-semibold shadow-lg shadow-cyan-500/20">Save Result</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== FIREBASE & APPLICATION LOGIC ==================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Default Rich Demo Dataset (Clearly labeled)
+        const DEFAULT_DEMO_STATE = {
+            settings: {
+                schoolName: "CAMPUS PRO ACADEMY",
+                session: "Session 2026-2027",
+                phone: "+1 (800) 555-0199",
+                email: "registrar@campuspro.edu",
+                address: "1200 Innovation Drive, Tech Park, CA",
+                theme: "cyan"
+            },
+            classes: [
+                { id: "CLS-1", name: "Grade 10", section: "Section A", teacher: "Dr. Elena Rostova", subjects: ["Mathematics", "Quantum Physics", "Computer Science", "English Literature"] },
+                { id: "CLS-2", name: "Grade 11", section: "Section B", teacher: "Prof. Marcus Sterling", subjects: ["Advanced Calculus", "Organic Chemistry", "Data Structures", "Economics"] },
+                { id: "CLS-3", name: "Grade 12", section: "Section A", teacher: "Dr. Sophia Chen", subjects: ["Artificial Intelligence", "Applied Statistics", "Biotechnology", "World History"] }
+            ],
+            teachers: [
+                { id: "TCH-1", name: "Dr. Elena Rostova [Demo]", subject: "Quantum Physics", qualification: "Ph.D. Theoretical Physics", classes: "Grade 10 - Section A, Grade 12 - Section A", email: "e.rostova@campuspro.edu", phone: "+1 (555) 231-8890" },
+                { id: "TCH-2", name: "Prof. Marcus Sterling [Demo]", subject: "Advanced Mathematics", qualification: "M.Sc. Applied Mathematics", classes: "Grade 11 - Section B", email: "m.sterling@campuspro.edu", phone: "+1 (555) 492-1104" },
+                { id: "TCH-3", name: "Dr. Sophia Chen [Demo]", subject: "Computer Science & AI", qualification: "Ph.D. Computer Science", classes: "Grade 10 - Section A, Grade 12 - Section A", email: "s.chen@campuspro.edu", phone: "+1 (555) 774-3321" },
+                { id: "TCH-4", name: "Prof. Liam O'Connor [Demo]", subject: "Organic Chemistry", qualification: "M.Sc. Biochemistry", classes: "Grade 11 - Section B", email: "l.oconnor@campuspro.edu", phone: "+1 (555) 619-9045" }
+            ],
+            students: [
+                { id: "STU-1", roll: "CP-2026-101", name: "Aiden Vance [Demo]", className: "Grade 10 - Section A", gender: "Male", guardian: "Richard Vance", phone: "+1 (555) 301-4411", admissionDate: "2026-08-15", address: "42 Oakridge Ave, Northview" },
+                { id: "STU-2", roll: "CP-2026-102", name: "Maya Lin [Demo]", className: "Grade 12 - Section A", gender: "Female", guardian: "David Lin", phone: "+1 (555) 302-9982", admissionDate: "2026-08-18", address: "88 Willow Creek Rd, Westside" },
+                { id: "STU-3", roll: "CP-2026-103", name: "Lucas Thorne [Demo]", className: "Grade 11 - Section B", gender: "Male", guardian: "Sarah Thorne", phone: "+1 (555) 303-7741", admissionDate: "2026-08-22", address: "19 Maple Boulevard, Central" },
+                { id: "STU-4", roll: "CP-2026-104", name: "Zara Al-Mansoor [Demo]", className: "Grade 10 - Section A", gender: "Female", guardian: "Tariq Al-Mansoor", phone: "+1 (555) 304-1290", admissionDate: "2026-09-02", address: "705 Crescent Heights, Eastbay" },
+                { id: "STU-5", roll: "CP-2026-105", name: "Ethan Brooks [Demo]", className: "Grade 12 - Section A", gender: "Male", guardian: "Claire Brooks", phone: "+1 (555) 305-6632", admissionDate: "2026-09-10", address: "310 Pinecrest Terrace, Southgate" },
+                { id: "STU-6", roll: "CP-2026-106", name: "Aria Montgomery [Demo]", className: "Grade 11 - Section B", gender: "Female", guardian: "Byron Montgomery", phone: "+1 (555) 306-5521", admissionDate: "2026-09-14", address: "14 Rosewood Lane, Rosewood" }
+            ],
+            fees: [
+                { id: "INV-2026-01", studentId: "STU-1", month: "November 2026", total: 500, paid: 500, date: "2026-11-05", method: "Bank Transfer" },
+                { id: "INV-2026-02", studentId: "STU-2", month: "November 2026", total: 550, paid: 550, date: "2026-11-06", method: "Credit / Debit Card" },
+                { id: "INV-2026-03", studentId: "STU-3", month: "November 2026", total: 520, paid: 300, date: "2026-11-10", method: "Online Portal" },
+                { id: "INV-2026-04", studentId: "STU-4", month: "November 2026", total: 500, paid: 0, date: "2026-11-12", method: "Pending" },
+                { id: "INV-2026-05", studentId: "STU-5", month: "November 2026", total: 550, paid: 400, date: "2026-11-15", method: "Cash Counter" },
+                { id: "INV-2026-06", studentId: "STU-6", month: "November 2026", total: 520, paid: 520, date: "2026-11-18", method: "Bank Transfer" }
+            ],
+            attendance: {},
+            exams: [
+                { id: "EXM-1", studentId: "STU-1", term: "Mid-Term Examination 2026", subject: "Computer Science", obtained: 94, total: 100 },
+                { id: "EXM-2", studentId: "STU-2", term: "Mid-Term Examination 2026", subject: "Artificial Intelligence", obtained: 97, total: 100 },
+                { id: "EXM-3", studentId: "STU-3", term: "Mid-Term Examination 2026", subject: "Advanced Calculus", obtained: 82, total: 100 },
+                { id: "EXM-4", studentId: "STU-4", term: "Mid-Term Examination 2026", subject: "Quantum Physics", obtained: 89, total: 100 },
+                { id: "EXM-5", studentId: "STU-5", term: "Mid-Term Examination 2026", subject: "Applied Statistics", obtained: 76, total: 100 }
+            ]
+        };
+
+        // Pre-populate today's attendance in demo data
+        const todayStr = new Date().toISOString().split('T')[0];
+        DEFAULT_DEMO_STATE.attendance[todayStr] = {
+            "STU-1": "Present",
+            "STU-2": "Present",
+            "STU-3": "Present",
+            "STU-4": "Leave",
+            "STU-5": "Present",
+            "STU-6": "Absent"
+        };
+
+        // Global App State
+        window.appState = JSON.parse(JSON.stringify(DEFAULT_DEMO_STATE));
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'campus-pro-sms';
+
+        // Initialize Firebase Cloud Persistence
+        async function initCloudPersistence() {
+            try {
+                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                    const firebaseConfig = JSON.parse(__firebase_config);
+                    const app = initializeApp(firebaseConfig);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+
+                    onAuthStateChanged(auth, async (user) => {
+                        if (!user) return;
+                        currentUser = user;
+                        const stateDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'campus_pro_data', 'main_state');
+
+                        // Check if cloud state exists; if not, seed with demo data
+                        const snap = await getDoc(stateDocRef);
+                        if (!snap.exists()) {
+                            await setDoc(stateDocRef, window.appState);
+                        }
+
+                        // Real-time listener
+                        onSnapshot(stateDocRef, (docSnap) => {
+                            if (docSnap.exists()) {
+                                window.appState = docSnap.data();
+                                if (!window.appState.attendance) window.appState.attendance = {};
+                                refreshAllUI();
+                                updateSyncIndicator(true);
+                            }
+                        }, (err) => {
+                            console.error("Sync listener error:", err);
+                            updateSyncIndicator(false);
+                        });
+                    });
+                } else {
+                    updateSyncIndicator(true, "Session Active");
+                }
+            } catch (error) {
+                console.warn("Running in standalone memory mode:", error);
+                updateSyncIndicator(true, "Memory Mode");
+            }
+        }
+
+        function updateSyncIndicator(synced, label = "Cloud Synced") {
+            const dot = document.getElementById('sync-dot');
+            const txt = document.getElementById('sync-status-text');
+            if (dot && txt) {
+                dot.className = synced ? "w-2 h-2 rounded-full bg-emerald-400 animate-pulse" : "w-2 h-2 rounded-full bg-amber-400";
+                txt.textContent = label;
+            }
+        }
+
+        window.persistState = async function() {
+            refreshAllUI();
+            if (db && currentUser) {
+                try {
+                    updateSyncIndicator(true, "Saving...");
+                    const stateDocRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'campus_pro_data', 'main_state');
+                    await setDoc(stateDocRef, window.appState);
+                    updateSyncIndicator(true, "Cloud Synced");
+                } catch (e) {
+                    console.error("Error saving to cloud:", e);
+                    updateSyncIndicator(false, "Sync Retry");
+                }
+            }
+        };
+
+        window.confirmResetDemoData = function() {
+            showConfirmModal(
+                "Restore Default Demo Data",
+                "This will overwrite current records with the original CAMPUS PRO demo dataset. Continue?",
+                async () => {
+                    window.appState = JSON.parse(JSON.stringify(DEFAULT_DEMO_STATE));
+                    await window.persistState();
+                    showToast("Default demo data restored successfully!", "success");
+                }
+            );
+        };
+
+        // Start Cloud Engine
+        initCloudPersistence();
+    </script>
+
+    <!-- Core UI & Business Logic Script -->
+    <script>
+        let feeChartInstance = null;
+        let attendanceChartInstance = null;
+
+        // Initialize Icons & Default Date
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            const today = new Date().toISOString().split('T')[0];
+            const attDateInput = document.getElementById('attendance-date');
+            if (attDateInput) attDateInput.value = today;
+
+            // Login Form Handler
+            document.getElementById('login-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('login-email').value.trim();
+                const pass = document.getElementById('login-password').value.trim();
+                if (!email || !pass) {
+                    showToast("Please enter valid administrator credentials.", "error");
+                    return;
+                }
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-shell').classList.remove('hidden');
+                refreshAllUI();
+                showToast("Welcome back to CAMPUS PRO Admin Console!", "success");
+            });
+
+            // Sidebar Navigation Clicks
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tab = btn.getAttribute('data-tab');
+                    switchTab(tab);
+                    if (window.innerWidth < 1024) {
+                        toggleMobileSidebar(false);
+                    }
+                });
+            });
+
+            // Bind CRUD Forms
+            bindAllForms();
+        });
+
+        function handleLogout() {
+            document.getElementById('app-shell').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+            showToast("Signed out securely.", "info");
+        }
+
+        function toggleMobileSidebar(forceState) {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            const isOpen = !sidebar.classList.contains('-translate-x-full');
+            const nextState = typeof forceState === 'boolean' ? forceState : !isOpen;
+
+            if (nextState) {
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+        }
+
+        const TAB_METADATA = {
+            dashboard: { title: "Dashboard Overview", sub: "Real-time institutional metrics, admissions & financial health" },
+            students: { title: "Student Management", sub: "Manage admissions, profiles, roll numbers & guardian records" },
+            fees: { title: "Fee & Billing Management", sub: "Track tuition invoices, partial payments, balances & printable receipts" },
+            attendance: { title: "Attendance Tracker", sub: "Daily class attendance register & presence analytics" },
+            teachers: { title: "Faculty & Teachers", sub: "Manage educators, qualifications & subject assignments" },
+            classes: { title: "Classes & Curriculum", sub: "Configure grade sections, homeroom teachers & subjects" },
+            exams: { title: "Examinations & Results", sub: "Record term marks, calculate percentages & academic grades" },
+            reports: { title: "Analytics & Exports", sub: "Generate downloadable PDF & Excel institutional reports" },
+            settings: { title: "System Settings", sub: "Customize institutional branding, theme palette & cloud backups" }
+        };
+
+        function switchTab(tabId) {
+            // Update Nav Styling
+            document.querySelectorAll('.nav-item').forEach(el => {
+                if (el.getAttribute('data-tab') === tabId) {
+                    el.classList.add('brand-gradient', 'text-white', 'shadow-lg', 'shadow-cyan-500/20');
+                    el.classList.remove('text-slate-400', 'hover:text-white', 'hover:bg-white/5');
+                } else {
+                    el.classList.remove('brand-gradient', 'text-white', 'shadow-lg', 'shadow-cyan-500/20');
+                    el.classList.add('text-slate-400', 'hover:text-white', 'hover:bg-white/5');
+                }
+            });
+
+            // Switch Section Visibility
+            document.querySelectorAll('.view-section').forEach(sec => sec.classList.add('hidden'));
+            const target = document.getElementById(`view-${tabId}`);
+            if (target) target.classList.remove('hidden');
+
+            // Update Header Title
+            if (TAB_METADATA[tabId]) {
+                document.getElementById('page-title').textContent = TAB_METADATA[tabId].title;
+                document.getElementById('page-subtitle').textContent = TAB_METADATA[tabId].sub;
+            }
+
+            refreshAllUI();
+        }
+
+        function handleGlobalSearch(query) {
+            if (!query.trim()) return;
+            switchTab('students');
+            document.getElementById('student-search').value = query;
+            renderStudentsTable();
+        }
+
+        // ==================== MASTER UI REFRESH ====================
+        function refreshAllUI() {
+            if (!window.appState) return;
+            applySettingsToUI();
+            populateDropdowns();
+            renderDashboard();
+            renderStudentsTable();
+            renderFeesTable();
+            renderAttendanceRegister();
+            renderTeachersGrid();
+            renderClassesGrid();
+            renderExamsTable();
+            lucide.createIcons();
+        }
+
+        function applySettingsToUI() {
+            const s = window.appState.settings;
+            document.getElementById('sidebar-school-name').textContent = s.schoolName;
+            document.getElementById('header-academic-year').textContent = s.session;
+            document.getElementById('setting-school-name').value = s.schoolName;
+            document.getElementById('setting-session').value = s.session;
+            document.getElementById('setting-phone').value = s.phone;
+            document.getElementById('setting-email').value = s.email;
+            document.getElementById('setting-address').value = s.address;
+            applyTheme(s.theme || 'cyan', false);
+        }
+
+        function applyTheme(themeName, shouldSave = true) {
+            document.body.classList.remove('theme-emerald', 'theme-violet');
+            if (themeName === 'emerald') document.body.classList.add('theme-emerald');
+            if (themeName === 'violet') document.body.classList.add('theme-violet');
+            if (shouldSave && window.appState) {
+                window.appState.settings.theme = themeName;
+                window.persistState();
+                showToast(`Theme updated to ${themeName.toUpperCase()}`, "success");
+            }
+        }
+
+        function populateDropdowns() {
+            const classes = window.appState.classes.map(c => `${c.name} - ${c.section}`);
+            
+            // Student Modal Class Select
+            const studentClassSel = document.getElementById('student-class');
+            studentClassSel.innerHTML = classes.map(c => `<option value="${c}">${c}</option>`).join('');
+
+            // Student Filter Select
+            const studentFilterSel = document.getElementById('student-class-filter');
+            const currentFilter = studentFilterSel.value;
+            studentFilterSel.innerHTML = `<option value="ALL">All Classes</option>` + classes.map(c => `<option value="${c}">${c}</option>`).join('');
+            if (classes.includes(currentFilter)) studentFilterSel.value = currentFilter;
+
+            // Attendance Class Filter
+            const attFilterSel = document.getElementById('attendance-class-filter');
+            const currentAttFilter = attFilterSel.value;
+            attFilterSel.innerHTML = `<option value="ALL">All Classes</option>` + classes.map(c => `<option value="${c}">${c}</option>`).join('');
+            if (classes.includes(currentAttFilter)) attFilterSel.value = currentAttFilter;
+
+            // Fee & Exam Student Selects
+            const studentOpts = window.appState.students.map(s => `<option value="${s.id}">${s.name} (${s.roll})</option>`).join('');
+            document.getElementById('fee-student-id').innerHTML = studentOpts;
+            document.getElementById('exam-student-id').innerHTML = studentOpts;
+        }
+
+        // ==================== 1. DASHBOARD RENDERING ====================
+        function renderDashboard() {
+            const { students, teachers, fees, attendance } = window.appState;
+
+            const totalCollected = fees.reduce((sum, f) => sum + Number(f.paid || 0), 0);
+            const totalBilled = fees.reduce((sum, f) => sum + Number(f.total || 0), 0);
+            const totalPending = Math.max(0, totalBilled - totalCollected);
+
+            document.getElementById('stat-total-students').textContent = students.length;
+            document.getElementById('stat-total-teachers').textContent = teachers.length;
+            document.getElementById('stat-collected-fees').textContent = `$${totalCollected.toLocaleString()}`;
+            document.getElementById('stat-pending-fees').textContent = `$${totalPending.toLocaleString()}`;
+
+            // Recent Admissions Table
+            const recentBody = document.getElementById('dashboard-recent-admissions');
+            const recentStudents = [...students].slice(-5).reverse();
+            recentBody.innerHTML = recentStudents.map(s => {
+                const stFee = fees.find(f => f.studentId === s.id);
+                const status = !stFee ? 'Unbilled' : (stFee.paid >= stFee.total ? 'Paid' : (stFee.paid > 0 ? 'Partial' : 'Unpaid'));
+                const badgeClass = status === 'Paid' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' :
+                                   status === 'Partial' ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
+                                   'bg-rose-500/15 text-rose-400 border-rose-500/30';
+                return `
+                    <tr class="hover:bg-white/[0.02] transition">
+                        <td class="py-3.5 font-medium text-white">${s.name}</td>
+                        <td class="py-3.5 text-cyan-400 font-mono text-xs">${s.roll}</td>
+                        <td class="py-3.5 text-slate-300 text-xs">${s.className}</td>
+                        <td class="py-3.5 text-slate-400 text-xs">${s.admissionDate}</td>
+                        <td class="py-3.5 text-right">
+                            <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold border ${badgeClass}">${status}</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            renderCharts(totalCollected, totalPending);
+        }
+
+        function renderCharts(totalCollected, totalPending) {
+            // Fee Chart
+            const feeCtx = document.getElementById('feeChart');
+            if (feeCtx) {
+                if (feeChartInstance) feeChartInstance.destroy();
+                feeChartInstance = new Chart(feeCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Jul', 'Aug', 'Sep', 'Oct', 'Nov (Current)'],
+                        datasets: [
+                            {
+                                label: 'Collected Fees ($)',
+                                data: [1850, 2100, 2250, 2400, totalCollected],
+                                backgroundColor: 'rgba(6, 182, 212, 0.8)',
+                                borderRadius: 8
+                            },
+                            {
+                                label: 'Pending Dues ($)',
+                                data: [400, 320, 280, 190, totalPending],
+                                backgroundColor: 'rgba(59, 130, 246, 0.35)',
+                                borderRadius: 8
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: '#94a3b8', font: { family: 'Inter', size: 12 } } }
+                        },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+                            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+                        }
+                    }
+                });
+            }
+
+            // Attendance Doughnut Chart
+            const today = new Date().toISOString().split('T')[0];
+            const todayAtt = window.appState.attendance[today] || {};
+            let present = 0, absent = 0, leave = 0;
+            window.appState.students.forEach(s => {
+                const st = todayAtt[s.id] || 'Present';
+                if (st === 'Present') present++;
+                else if (st === 'Absent') absent++;
+                else leave++;
+            });
+
+            const attCtx = document.getElementById('attendanceChart');
+            if (attCtx) {
+                if (attendanceChartInstance) attendanceChartInstance.destroy();
+                attendanceChartInstance = new Chart(attCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Present', 'Absent', 'On Leave'],
+                        datasets: [{
+                            data: [present, absent, leave],
+                            backgroundColor: ['#10b981', '#f43f5e', '#f59e0b'],
+                            borderWidth: 0,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '72%',
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+
+            document.getElementById('attendance-summary-pills').innerHTML = `
+                <div class="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                    <span class="block font-bold text-emerald-400 text-sm">${present}</span>
+                    <span class="text-slate-400 text-[10px]">Present</span>
+                </div>
+                <div class="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20">
+                    <span class="block font-bold text-rose-400 text-sm">${absent}</span>
+                    <span class="text-slate-400 text-[10px]">Absent</span>
+                </div>
+                <div class="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                    <span class="block font-bold text-amber-400 text-sm">${leave}</span>
+                    <span class="text-slate-400 text-[10px]">Leave</span>
+                </div>
+            `;
+        }
+
+        // ==================== 2. STUDENT MANAGEMENT ====================
+        function renderStudentsTable() {
+            const query = (document.getElementById('student-search')?.value || '').toLowerCase();
+            const classFilter = document.getElementById('student-class-filter')?.value || 'ALL';
+            const tbody = document.getElementById('students-table-body');
+
+            const filtered = window.appState.students.filter(s => {
+                const matchesSearch = s.name.toLowerCase().includes(query) || s.roll.toLowerCase().includes(query) || s.guardian.toLowerCase().includes(query);
+                const matchesClass = classFilter === 'ALL' || s.className === classFilter;
+                return matchesSearch && matchesClass;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-10 text-center text-slate-400">No matching student records found.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(s => `
+                <tr class="hover:bg-white/[0.03] transition">
+                    <td class="py-4 px-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex items-center justify-center font-bold text-xs shrink-0">
+                                ${s.name.split(' ').map(n => n[0]).slice(0,2).join('')}
+                            </div>
+                            <div>
+                                <p class="font-semibold text-white">${s.name}</p>
+                                <p class="text-xs text-slate-400">${s.gender}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-4 px-6 font-mono text-xs text-cyan-400 font-semibold">${s.roll}</td>
+                    <td class="py-4 px-6 text-slate-300">${s.className}</td>
+                    <td class="py-4 px-6">
+                        <p class="text-slate-200">${s.guardian}</p>
+                        <p class="text-xs text-slate-400">${s.phone}</p>
+                    </td>
+                    <td class="py-4 px-6 text-slate-400 text-xs">${s.admissionDate}</td>
+                    <td class="py-4 px-6 text-right">
+                        <div class="inline-flex items-center gap-1.5">
+                            <button onclick="viewStudentProfile('${s.id}')" title="View Profile" class="p-2 rounded-lg bg-slate-800 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-400 transition">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="openStudentModal('${s.id}')" title="Edit Student" class="p-2 rounded-lg bg-slate-800 hover:bg-blue-500/20 text-slate-300 hover:text-blue-400 transition">
+                                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="deleteStudent('${s.id}')" title="Delete Student" class="p-2 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 transition">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function openStudentModal(studentId = null) {
+            const modal = document.getElementById('student-modal');
+            const title = document.getElementById('student-modal-title');
+            const form = document.getElementById('student-form');
+            form.reset();
+
+            if (studentId) {
+                const s = window.appState.students.find(x => x.id === studentId);
+                if (!s) return;
+                title.textContent = "Edit Student Record";
+                document.getElementById('student-id').value = s.id;
+                document.getElementById('student-name').value = s.name;
+                document.getElementById('student-roll').value = s.roll;
+                document.getElementById('student-class').value = s.className;
+                document.getElementById('student-gender').value = s.gender;
+                document.getElementById('student-guardian').value = s.guardian;
+                document.getElementById('student-phone').value = s.phone;
+                document.getElementById('student-admission-date').value = s.admissionDate;
+                document.getElementById('student-address').value = s.address || '';
+            } else {
+                title.textContent = "New Student Admission";
+                document.getElementById('student-id').value = '';
+                document.getElementById('student-roll').value = `CP-2026-${101 + window.appState.students.length}`;
+                document.getElementById('student-admission-date').value = new Date().toISOString().split('T')[0];
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function viewStudentProfile(studentId) {
+            const s = window.appState.students.find(x => x.id === studentId);
+            if (!s) return;
+
+            document.getElementById('profile-avatar').textContent = s.name.split(' ').map(n => n[0]).slice(0,2).join('');
+            document.getElementById('profile-name').textContent = s.name;
+            document.getElementById('profile-roll').textContent = `${s.roll} • ${s.className}`;
+
+            const studentFees = window.appState.fees.filter(f => f.studentId === s.id);
+            const totalPaid = studentFees.reduce((sum, f) => sum + Number(f.paid), 0);
+            const totalDue = studentFees.reduce((sum, f) => sum + (Number(f.total) - Number(f.paid)), 0);
+
+            document.getElementById('profile-details-content').innerHTML = `
+                <div class="grid grid-cols-2 gap-3 bg-slate-900/70 p-4 rounded-xl border border-white/5">
+                    <div><span class="text-xs text-slate-400 block">Gender</span><span class="font-medium text-white">${s.gender}</span></div>
+                    <div><span class="text-xs text-slate-400 block">Admission Date</span><span class="font-medium text-white">${s.admissionDate}</span></div>
+                    <div><span class="text-xs text-slate-400 block">Guardian Name</span><span class="font-medium text-white">${s.guardian}</span></div>
+                    <div><span class="text-xs text-slate-400 block">Contact Phone</span><span class="font-medium text-white">${s.phone}</span></div>
+                    <div class="col-span-2"><span class="text-xs text-slate-400 block">Residential Address</span><span class="font-medium text-white">${s.address || 'N/A'}</span></div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                        <span class="text-xs text-emerald-300 block">Total Fees Paid</span>
+                        <span class="text-lg font-bold text-emerald-400">$${totalPaid.toLocaleString()}</span>
+                    </div>
+                    <div class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                        <span class="text-xs text-amber-300 block">Pending Balance</span>
+                        <span class="text-lg font-bold text-amber-400">$${totalDue.toLocaleString()}</span>
+                    </div>
+                </div>
+            `;
+
+            const modal = document.getElementById('student-profile-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function deleteStudent(studentId) {
+            showConfirmModal("Delete Student Record", "Are you sure you want to remove this student and their associated records?", async () => {
+                window.appState.students = window.appState.students.filter(s => s.id !== studentId);
+                window.appState.fees = window.appState.fees.filter(f => f.studentId !== studentId);
+                window.appState.exams = window.appState.exams.filter(e => e.studentId !== studentId);
+                await window.persistState();
+                showToast("Student record deleted.", "success");
+            });
+        }
+
+        // ==================== 3. FEE MANAGEMENT ====================
+        function renderFeesTable() {
+            const query = (document.getElementById('fee-search')?.value || '').toLowerCase();
+            const statusFilter = document.getElementById('fee-status-filter')?.value || 'ALL';
+            const tbody = document.getElementById('fees-table-body');
+
+            let totalBilled = 0, totalPaid = 0;
+
+            const enriched = window.appState.fees.map(f => {
+                const student = window.appState.students.find(s => s.id === f.studentId) || { name: 'Unknown Student', roll: 'N/A', className: '' };
+                const total = Number(f.total || 0);
+                const paid = Number(f.paid || 0);
+                const balance = Math.max(0, total - paid);
+                const status = paid >= total ? 'Paid' : (paid > 0 ? 'Partial' : 'Unpaid');
+                totalBilled += total;
+                totalPaid += paid;
+                return { ...f, student, total, paid, balance, status };
+            });
+
+            document.getElementById('fee-kpi-total').textContent = `$${totalBilled.toLocaleString()}`;
+            document.getElementById('fee-kpi-paid').textContent = `$${totalPaid.toLocaleString()}`;
+            document.getElementById('fee-kpi-balance').textContent = `$${Math.max(0, totalBilled - totalPaid).toLocaleString()}`;
+
+            const filtered = enriched.filter(item => {
+                const matchesSearch = item.id.toLowerCase().includes(query) || item.student.name.toLowerCase().includes(query) || item.month.toLowerCase().includes(query);
+                const matchesStatus = statusFilter === 'ALL' || item.status === statusFilter;
+                return matchesSearch && matchesStatus;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="py-10 text-center text-slate-400">No fee invoices found matching your criteria.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(f => {
+                const badgeClass = f.status === 'Paid' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' :
+                                   f.status === 'Partial' ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
+                                   'bg-rose-500/15 text-rose-400 border-rose-500/30';
+                return `
+                    <tr class="hover:bg-white/[0.03] transition">
+                        <td class="py-4 px-6 font-mono text-xs text-cyan-400 font-semibold">${f.id}</td>
+                        <td class="py-4 px-6">
+                            <p class="font-semibold text-white">${f.student.name}</p>
+                            <p class="text-xs text-slate-400">${f.student.roll}</p>
+                        </td>
+                        <td class="py-4 px-6 text-slate-300">${f.month}</td>
+                        <td class="py-4 px-6 font-semibold text-white">$${f.total.toFixed(2)}</td>
+                        <td class="py-4 px-6 font-semibold text-emerald-400">$${f.paid.toFixed(2)}</td>
+                        <td class="py-4 px-6 font-semibold ${f.balance > 0 ? 'text-amber-400' : 'text-slate-400'}">$${f.balance.toFixed(2)}</td>
+                        <td class="py-4 px-6">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold border ${badgeClass}">${f.status}</span>
+                        </td>
+                        <td class="py-4 px-6 text-right">
+                            <div class="inline-flex items-center gap-1.5">
+                                <button onclick="openReceiptModal('${f.id}')" title="Print Receipt" class="p-2 rounded-lg bg-slate-800 hover:bg-cyan-500/20 text-slate-300 hover:text-cyan-400 transition">
+                                    <i data-lucide="printer" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="openFeeModal('${f.id}')" title="Edit Payment" class="p-2 rounded-lg bg-slate-800 hover:bg-blue-500/20 text-slate-300 hover:text-blue-400 transition">
+                                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="deleteFee('${f.id}')" title="Delete Invoice" class="p-2 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 transition">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function openFeeModal(feeId = null) {
+            const modal = document.getElementById('fee-modal');
+            const form = document.getElementById('fee-form');
+            form.reset();
+
+            if (feeId) {
+                const f = window.appState.fees.find(x => x.id === feeId);
+                if (!f) return;
+                document.getElementById('fee-modal-title').textContent = `Update Invoice (${f.id})`;
+                document.getElementById('fee-id').value = f.id;
+                document.getElementById('fee-student-id').value = f.studentId;
+                document.getElementById('fee-month').value = f.month;
+                document.getElementById('fee-date').value = f.date;
+                document.getElementById('fee-total').value = f.total;
+                document.getElementById('fee-paid').value = f.paid;
+                document.getElementById('fee-method').value = f.method || 'Bank Transfer';
+            } else {
+                document.getElementById('fee-modal-title').textContent = "Record Fee Invoice / Payment";
+                document.getElementById('fee-id').value = '';
+                document.getElementById('fee-month').value = "November 2026";
+                document.getElementById('fee-date').value = new Date().toISOString().split('T')[0];
+                document.getElementById('fee-total').value = 500;
+                document.getElementById('fee-paid').value = 500;
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function openReceiptModal(feeId) {
+            const f = window.appState.fees.find(x => x.id === feeId);
+            if (!f) return;
+            const student = window.appState.students.find(s => s.id === f.studentId) || { name: 'Student', className: 'N/A', roll: '' };
+            const s = window.appState.settings;
+            const balance = Math.max(0, Number(f.total) - Number(f.paid));
+            const status = f.paid >= f.total ? 'PAID IN FULL' : (f.paid > 0 ? 'PARTIAL PAYMENT' : 'UNPAID');
+
+            document.getElementById('receipt-school-name').textContent = s.schoolName;
+            document.getElementById('receipt-school-address').textContent = s.address;
+            document.getElementById('receipt-school-contact').textContent = `Tel: ${s.phone} • ${s.email}`;
+            document.getElementById('receipt-invoice-no').textContent = `#${f.id}`;
+            document.getElementById('receipt-student-name').textContent = `${student.name} (${student.roll})`;
+            document.getElementById('receipt-student-class').textContent = student.className;
+            document.getElementById('receipt-date').textContent = `Date: ${f.date}`;
+            document.getElementById('receipt-method').textContent = `Method: ${f.method}`;
+            document.getElementById('receipt-desc').textContent = `Monthly Tuition & Academic Fee (${f.month})`;
+            document.getElementById('receipt-total').textContent = `$${Number(f.total).toFixed(2)}`;
+            document.getElementById('receipt-paid').textContent = `$${Number(f.paid).toFixed(2)}`;
+            document.getElementById('receipt-balance').textContent = `$${balance.toFixed(2)}`;
+            document.getElementById('receipt-status').textContent = status;
+
+            const modal = document.getElementById('receipt-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function deleteFee(feeId) {
+            showConfirmModal("Delete Fee Invoice", "Are you sure you want to delete this billing invoice?", async () => {
+                window.appState.fees = window.appState.fees.filter(f => f.id !== feeId);
+                await window.persistState();
+                showToast("Fee invoice deleted.", "success");
+            });
+        }
+
+        // ==================== 4. ATTENDANCE MANAGEMENT ====================
+        let tempAttendanceDraft = {};
+
+        function renderAttendanceRegister() {
+            const dateStr = document.getElementById('attendance-date')?.value || new Date().toISOString().split('T')[0];
+            const classFilter = document.getElementById('attendance-class-filter')?.value || 'ALL';
+            const savedForDate = window.appState.attendance[dateStr] || {};
+            
+            tempAttendanceDraft = { ...savedForDate };
+
+            const filteredStudents = window.appState.students.filter(s => classFilter === 'ALL' || s.className === classFilter);
+            const tbody = document.getElementById('attendance-table-body');
+
+            let presentCount = 0, absentCount = 0, leaveCount = 0;
+
+            tbody.innerHTML = filteredStudents.map(s => {
+                const status = tempAttendanceDraft[s.id] || 'Present';
+                tempAttendanceDraft[s.id] = status;
+                if (status === 'Present') presentCount++;
+                else if (status === 'Absent') absentCount++;
+                else leaveCount++;
+
+                // Calculate overall % across all recorded dates
+                const allDates = Object.keys(window.appState.attendance);
+                let totalDays = allDates.length || 1;
+                let presentDays = 0;
+                allDates.forEach(d => {
+                    if ((window.appState.attendance[d][s.id] || 'Present') === 'Present') presentDays++;
+                });
+                const pct = Math.round((presentDays / totalDays) * 100);
+
+                return `
+                    <tr class="hover:bg-white/[0.02] transition">
+                        <td class="py-4 px-6 font-mono text-xs text-cyan-400 font-semibold">${s.roll}</td>
+                        <td class="py-4 px-6 font-semibold text-white">${s.name}</td>
+                        <td class="py-4 px-6 text-slate-300 text-xs">${s.className}</td>
+                        <td class="py-4 px-6">
+                            <div class="flex items-center gap-2">
+                                <div class="w-24 h-2 rounded-full bg-slate-800 overflow-hidden">
+                                    <div class="h-full bg-cyan-400" style="width: ${pct}%"></div>
+                                </div>
+                                <span class="text-xs font-semibold text-slate-300">${pct}%</span>
+                            </div>
+                        </td>
+                        <td class="py-4 px-6 text-right">
+                            <div class="inline-flex rounded-xl bg-slate-900 p-1 border border-white/5 gap-1">
+                                <button type="button" onclick="setStudentAttendance('${s.id}', 'Present')"
+                                    class="px-3 py-1.5 rounded-lg text-xs font-semibold transition ${status === 'Present' ? 'bg-emerald-500 text-white shadow' : 'text-slate-400 hover:text-white'}">
+                                    Present
+                                </button>
+                                <button type="button" onclick="setStudentAttendance('${s.id}', 'Absent')"
+                                    class="px-3 py-1.5 rounded-lg text-xs font-semibold transition ${status === 'Absent' ? 'bg-rose-500 text-white shadow' : 'text-slate-400 hover:text-white'}">
+                                    Absent
+                                </button>
+                                <button type="button" onclick="setStudentAttendance('${s.id}', 'Leave')"
+                                    class="px-3 py-1.5 rounded-lg text-xs font-semibold transition ${status === 'Leave' ? 'bg-amber-500 text-white shadow' : 'text-slate-400 hover:text-white'}">
+                                    Leave
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('attendance-stats-bar').innerHTML = `
+                <div class="glass-card rounded-xl p-4"><span class="text-xs text-slate-400 block">Total Listed</span><span class="text-xl font-bold text-white">${filteredStudents.length}</span></div>
+                <div class="glass-card rounded-xl p-4"><span class="text-xs text-emerald-400 block">Present</span><span class="text-xl font-bold text-emerald-400">${presentCount}</span></div>
+                <div class="glass-card rounded-xl p-4"><span class="text-xs text-rose-400 block">Absent</span><span class="text-xl font-bold text-rose-400">${absentCount}</span></div>
+                <div class="glass-card rounded-xl p-4"><span class="text-xs text-amber-400 block">On Leave</span><span class="text-xl font-bold text-amber-400">${leaveCount}</span></div>
+            `;
+        }
+
+        function setStudentAttendance(studentId, status) {
+            const dateStr = document.getElementById('attendance-date').value;
+            if (!window.appState.attendance[dateStr]) window.appState.attendance[dateStr] = {};
+            window.appState.attendance[dateStr][studentId] = status;
+            renderAttendanceRegister();
+        }
+
+        function markAllAttendance(status) {
+            const dateStr = document.getElementById('attendance-date').value;
+            if (!window.appState.attendance[dateStr]) window.appState.attendance[dateStr] = {};
+            window.appState.students.forEach(s => {
+                window.appState.attendance[dateStr][s.id] = status;
+            });
+            renderAttendanceRegister();
+            showToast(`All students marked as ${status}. Click Save to commit.`, "info");
+        }
+
+        async function saveDailyAttendance() {
+            const dateStr = document.getElementById('attendance-date').value;
+            window.appState.attendance[dateStr] = { ...tempAttendanceDraft };
+            await window.persistState();
+            showToast(`Attendance saved for ${dateStr}!`, "success");
+        }
+
+        // ==================== 5. TEACHER MANAGEMENT ====================
+        function renderTeachersGrid() {
+            const query = (document.getElementById('teacher-search')?.value || '').toLowerCase();
+            const grid = document.getElementById('teachers-grid');
+
+            const filtered = window.appState.teachers.filter(t => 
+                t.name.toLowerCase().includes(query) || t.subject.toLowerCase().includes(query)
+            );
+
+            grid.innerHTML = filtered.map(t => `
+                <div class="glass-card rounded-2xl p-6 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-center gap-3.5">
+                                <div class="w-12 h-12 rounded-2xl brand-gradient flex items-center justify-center text-white font-bold text-base shrink-0">
+                                    ${t.name.split(' ').map(n => n[0]).slice(0,2).join('')}
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-white text-base">${t.name}</h4>
+                                    <p class="text-xs text-cyan-400 font-semibold">${t.subject}</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-1">
+                                <button onclick="openTeacherModal('${t.id}')" class="p-2 rounded-lg bg-slate-800 hover:bg-blue-500/20 text-slate-400 hover:text-blue-400 transition"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                <button onclick="deleteTeacher('${t.id}')" class="p-2 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </div>
+                        </div>
+                        <div class="mt-5 space-y-2.5 text-xs text-slate-300 bg-slate-900/60 p-4 rounded-xl border border-white/5">
+                            <p class="flex items-center gap-2"><i data-lucide="award" class="w-4 h-4 text-cyan-400"></i> <span>${t.qualification}</span></p>
+                            <p class="flex items-center gap-2"><i data-lucide="book-open" class="w-4 h-4 text-blue-400"></i> <span>${t.classes}</span></p>
+                            <p class="flex items-center gap-2"><i data-lucide="mail" class="w-4 h-4 text-slate-400"></i> <span>${t.email}</span></p>
+                            <p class="flex items-center gap-2"><i data-lucide="phone" class="w-4 h-4 text-slate-400"></i> <span>${t.phone}</span></p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function openTeacherModal(teacherId = null) {
+            const modal = document.getElementById('teacher-modal');
+            const form = document.getElementById('teacher-form');
+            form.reset();
+
+            if (teacherId) {
+                const t = window.appState.teachers.find(x => x.id === teacherId);
+                if (!t) return;
+                document.getElementById('teacher-modal-title').textContent = "Edit Faculty Profile";
+                document.getElementById('teacher-id').value = t.id;
+                document.getElementById('teacher-name').value = t.name;
+                document.getElementById('teacher-subject').value = t.subject;
+                document.getElementById('teacher-qualification').value = t.qualification;
+                document.getElementById('teacher-classes').value = t.classes;
+                document.getElementById('teacher-email').value = t.email;
+                document.getElementById('teacher-phone').value = t.phone;
+            } else {
+                document.getElementById('teacher-modal-title').textContent = "Add Faculty Member";
+                document.getElementById('teacher-id').value = '';
+            }
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function deleteTeacher(teacherId) {
+            showConfirmModal("Remove Faculty Member", "Are you sure you want to delete this teacher's profile?", async () => {
+                window.appState.teachers = window.appState.teachers.filter(t => t.id !== teacherId);
+                await window.persistState();
+                showToast("Faculty member removed.", "success");
+            });
+        }
+
+        // ==================== 6. CLASS MANAGEMENT ====================
+        function renderClassesGrid() {
+            const grid = document.getElementById('classes-grid');
+            grid.innerHTML = window.appState.classes.map(c => {
+                const fullName = `${c.name} - ${c.section}`;
+                const enrolledCount = window.appState.students.filter(s => s.className === fullName).length;
+                return `
+                    <div class="glass-card rounded-2xl p-6 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <span class="px-2.5 py-1 rounded-lg bg-cyan-500/15 text-cyan-400 text-xs font-bold">${c.section}</span>
+                                    <h4 class="text-xl font-bold text-white mt-2">${c.name}</h4>
+                                    <p class="text-xs text-slate-400 mt-1">In-Charge: <span class="text-slate-200 font-medium">${c.teacher}</span></p>
+                                </div>
+                                <div class="flex gap-1">
+                                    <button onclick="openClassModal('${c.id}')" class="p-2 rounded-lg bg-slate-800 hover:bg-blue-500/20 text-slate-400 hover:text-blue-400 transition"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                    <button onclick="deleteClass('${c.id}')" class="p-2 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="mt-5">
+                                <p class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold mb-2">Assigned Subjects</p>
+                                <div class="flex flex-wrap gap-1.5">
+                                    ${c.subjects.map(sub => `<span class="px-2.5 py-1 rounded-lg bg-slate-800/90 border border-white/5 text-xs text-slate-200">${sub}</span>`).join('')}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+                            <span class="text-slate-400">Enrolled Students</span>
+                            <span class="font-bold text-cyan-400">${enrolledCount} Students</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function openClassModal(classId = null) {
+            const modal = document.getElementById('class-modal');
+            const form = document.getElementById('class-form');
+            form.reset();
+
+            if (classId) {
+                const c = window.appState.classes.find(x => x.id === classId);
+                if (!c) return;
+                document.getElementById('class-modal-title').textContent = "Edit Class & Subjects";
+                document.getElementById('class-id').value = c.id;
+                document.getElementById('class-name').value = c.name;
+                document.getElementById('class-section').value = c.section;
+                document.getElementById('class-teacher').value = c.teacher;
+                document.getElementById('class-subjects').value = c.subjects.join(', ');
+            } else {
+                document.getElementById('class-modal-title').textContent = "Add Class & Section";
+                document.getElementById('class-id').value = '';
+            }
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function deleteClass(classId) {
+            showConfirmModal("Delete Class Section", "Are you sure you want to remove this class configuration?", async () => {
+                window.appState.classes = window.appState.classes.filter(c => c.id !== classId);
+                await window.persistState();
+                showToast("Class removed.", "success");
+            });
+        }
+
+        // ==================== 7. EXAMINATION MANAGEMENT ====================
+        function calculateGrade(pct) {
+            if (pct >= 90) return { grade: 'A+', color: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30' };
+            if (pct >= 80) return { grade: 'A', color: 'text-cyan-400 bg-cyan-500/15 border-cyan-500/30' };
+            if (pct >= 70) return { grade: 'B', color: 'text-blue-400 bg-blue-500/15 border-blue-500/30' };
+            if (pct >= 60) return { grade: 'C', color: 'text-amber-400 bg-amber-500/15 border-amber-500/30' };
+            return { grade: 'F', color: 'text-rose-400 bg-rose-500/15 border-rose-500/30' };
+        }
+
+        function renderExamsTable() {
+            const termFilter = document.getElementById('exam-term-filter')?.value || 'ALL';
+            const query = (document.getElementById('exam-search')?.value || '').toLowerCase();
+            const tbody = document.getElementById('exams-table-body');
+
+            const rows = window.appState.exams.map(ex => {
+                const student = window.appState.students.find(s => s.id === ex.studentId) || { name: 'Unknown Student', roll: 'N/A' };
+                const pct = Math.round((Number(ex.obtained) / Number(ex.total)) * 1000) / 10;
+                const gradeInfo = calculateGrade(pct);
+                return { ...ex, student, pct, gradeInfo };
+            }).filter(r => {
+                const matchTerm = termFilter === 'ALL' || r.term === termFilter;
+                const matchQuery = r.student.name.toLowerCase().includes(query) || r.subject.toLowerCase().includes(query);
+                return matchTerm && matchQuery;
+            });
+
+            if (rows.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-10 text-center text-slate-400">No examination records found.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = rows.map(r => `
+                <tr class="hover:bg-white/[0.03] transition">
+                    <td class="py-4 px-6">
+                        <p class="font-semibold text-white">${r.student.name}</p>
+                        <p class="text-xs text-slate-400">${r.student.roll}</p>
+                    </td>
+                    <td class="py-4 px-6 text-slate-300 text-xs">${r.term}</td>
+                    <td class="py-4 px-6 font-medium text-cyan-400">${r.subject}</td>
+                    <td class="py-4 px-6 font-semibold text-white">${r.obtained} / ${r.total}</td>
+                    <td class="py-4 px-6 font-bold text-slate-200">${r.pct}%</td>
+                    <td class="py-4 px-6">
+                        <span class="px-2.5 py-1 rounded-lg text-xs font-bold border ${r.gradeInfo.color}">${r.gradeInfo.grade}</span>
+                    </td>
+                    <td class="py-4 px-6 text-right">
+                        <button onclick="deleteExam('${r.id}')" class="p-2 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-400 transition">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function openExamModal() {
+            const modal = document.getElementById('exam-modal');
+            document.getElementById('exam-form').reset();
+            document.getElementById('exam-id').value = '';
+            document.getElementById('exam-total').value = 100;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function deleteExam(examId) {
+            showConfirmModal("Delete Exam Result", "Are you sure you want to delete this examination mark entry?", async () => {
+                window.appState.exams = window.appState.exams.filter(e => e.id !== examId);
+                await window.persistState();
+                showToast("Exam result deleted.", "success");
+            });
+        }
+
+        // ==================== 8. REPORTS (PDF & EXCEL) ====================
+        function getReportData(type) {
+            if (type === 'students') {
+                return {
+                    title: "Student Enrollment Directory",
+                    headers: ["Roll No", "Student Name", "Class", "Gender", "Guardian", "Phone", "Admission Date"],
+                    rows: window.appState.students.map(s => [s.roll, s.name, s.className, s.gender, s.guardian, s.phone, s.admissionDate])
+                };
+            }
+            if (type === 'fees') {
+                return {
+                    title: "Financial & Fee Collection Report",
+                    headers: ["Invoice ID", "Student Name", "Month", "Total Fee ($)", "Paid ($)", "Balance ($)", "Status"],
+                    rows: window.appState.fees.map(f => {
+                        const st = window.appState.students.find(s => s.id === f.studentId)?.name || 'Unknown';
+                        const bal = Math.max(0, f.total - f.paid);
+                        const status = f.paid >= f.total ? 'Paid' : (f.paid > 0 ? 'Partial' : 'Unpaid');
+                        return [f.id, st, f.month, f.total, f.paid, bal, status];
+                    })
+                };
+            }
+            if (type === 'exams') {
+                return {
+                    title: "Academic Examination Results",
+                    headers: ["Student Name", "Exam Term", "Subject", "Obtained", "Max Marks", "Percentage", "Grade"],
+                    rows: window.appState.exams.map(e => {
+                        const st = window.appState.students.find(s => s.id === e.studentId)?.name || 'Unknown';
+                        const pct = Math.round((e.obtained / e.total) * 1000) / 10;
+                        return [st, e.term, e.subject, e.obtained, e.total, `${pct}%`, calculateGrade(pct).grade];
+                    })
+                };
+            }
+            return {
+                title: "Faculty & Subject Allocation Roster",
+                headers: ["Faculty Name", "Subject", "Qualification", "Assigned Classes", "Email", "Phone"],
+                rows: window.appState.teachers.map(t => [t.name, t.subject, t.qualification, t.classes, t.email, t.phone])
+            };
+        }
+
+        function exportReportPDF(type) {
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                const report = getReportData(type);
+
+                doc.setFontSize(18);
+                doc.text(window.appState.settings.schoolName, 14, 18);
+                doc.setFontSize(12);
+                doc.setTextColor(100);
+                doc.text(`${report.title} (${window.appState.settings.session})`, 14, 26);
+
+                doc.autoTable({
+                    head: [report.headers],
+                    body: report.rows,
+                    startY: 32,
+                    theme: 'grid',
+                    headStyles: { fillColor: [6, 182, 212] }
+                });
+
+                doc.save(`CAMPUS_PRO_${type.toUpperCase()}_REPORT.pdf`);
+                showToast("PDF Report downloaded successfully!", "success");
+            } catch (e) {
+                console.error(e);
+                showToast("Could not generate PDF report.", "error");
+            }
+        }
+
+        function exportReportExcel(type) {
+            try {
+                const report = getReportData(type);
+                const wsData = [report.headers, ...report.rows];
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                XLSX.utils.book_append_sheet(wb, ws, report.title.slice(0, 30));
+                XLSX.writeFile(wb, `CAMPUS_PRO_${type.toUpperCase()}_REPORT.xlsx`);
+                showToast("Excel Spreadsheet exported!", "success");
+            } catch (e) {
+                console.error(e);
+                showToast("Could not generate Excel file.", "error");
+            }
+        }
+
+        function downloadJSONBackup() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(window.appState, null, 2));
+            const a = document.createElement('a');
+            a.setAttribute("href", dataStr);
+            a.setAttribute("download", `CAMPUS_PRO_BACKUP_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            showToast("System JSON backup downloaded!", "success");
+        }
+
+        // ==================== FORM SUBMISSIONS & VALIDATION ====================
+        function bindAllForms() {
+            // 1. Student Form
+            document.getElementById('student-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('student-id').value;
+                const payload = {
+                    id: id || `STU-${Date.now()}`,
+                    name: document.getElementById('student-name').value.trim(),
+                    roll: document.getElementById('student-roll').value.trim(),
+                    className: document.getElementById('student-class').value,
+                    gender: document.getElementById('student-gender').value,
+                    guardian: document.getElementById('student-guardian').value.trim(),
+                    phone: document.getElementById('student-phone').value.trim(),
+                    admissionDate: document.getElementById('student-admission-date').value,
+                    address: document.getElementById('student-address').value.trim()
+                };
+
+                if (id) {
+                    const idx = window.appState.students.findIndex(s => s.id === id);
+                    if (idx > -1) window.appState.students[idx] = payload;
+                } else {
+                    window.appState.students.push(payload);
+                }
+
+                closeModal('student-modal');
+                await window.persistState();
+                showToast(id ? "Student record updated!" : "New student admitted!", "success");
+            });
+
+            // 2. Fee Form
+            document.getElementById('fee-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('fee-id').value;
+                const total = parseFloat(document.getElementById('fee-total').value);
+                const paid = parseFloat(document.getElementById('fee-paid').value);
+
+                if (paid > total) {
+                    showToast("Paid amount cannot exceed total billed fee.", "error");
+                    return;
+                }
+
+                const payload = {
+                    id: id || `INV-2026-${String(window.appState.fees.length + 1).padStart(2, '0')}`,
+                    studentId: document.getElementById('fee-student-id').value,
+                    month: document.getElementById('fee-month').value.trim(),
+                    date: document.getElementById('fee-date').value,
+                    total,
+                    paid,
+                    method: document.getElementById('fee-method').value
+                };
+
+                if (id) {
+                    const idx = window.appState.fees.findIndex(f => f.id === id);
+                    if (idx > -1) window.appState.fees[idx] = payload;
+                } else {
+                    window.appState.fees.push(payload);
+                }
+
+                closeModal('fee-modal');
+                await window.persistState();
+                showToast("Fee transaction recorded!", "success");
+            });
+
+            // 3. Teacher Form
+            document.getElementById('teacher-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('teacher-id').value;
+                const payload = {
+                    id: id || `TCH-${Date.now()}`,
+                    name: document.getElementById('teacher-name').value.trim(),
+                    subject: document.getElementById('teacher-subject').value.trim(),
+                    qualification: document.getElementById('teacher-qualification').value.trim(),
+                    classes: document.getElementById('teacher-classes').value.trim(),
+                    email: document.getElementById('teacher-email').value.trim(),
+                    phone: document.getElementById('teacher-phone').value.trim()
+                };
+
+                if (id) {
+                    const idx = window.appState.teachers.findIndex(t => t.id === id);
+                    if (idx > -1) window.appState.teachers[idx] = payload;
+                } else {
+                    window.appState.teachers.push(payload);
+                }
+
+                closeModal('teacher-modal');
+                await window.persistState();
+                showToast("Faculty profile saved!", "success");
+            });
+
+            // 4. Class Form
+            document.getElementById('class-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('class-id').value;
+                const subjectsRaw = document.getElementById('class-subjects').value;
+                const payload = {
+                    id: id || `CLS-${Date.now()}`,
+                    name: document.getElementById('class-name').value.trim(),
+                    section: document.getElementById('class-section').value.trim(),
+                    teacher: document.getElementById('class-teacher').value.trim(),
+                    subjects: subjectsRaw.split(',').map(s => s.trim()).filter(Boolean)
+                };
+
+                if (id) {
+                    const idx = window.appState.classes.findIndex(c => c.id === id);
+                    if (idx > -1) window.appState.classes[idx] = payload;
+                } else {
+                    window.appState.classes.push(payload);
+                }
+
+                closeModal('class-modal');
+                await window.persistState();
+                showToast("Class & subject mapping saved!", "success");
+            });
+
+            // 5. Exam Form
+            document.getElementById('exam-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const obtained = parseFloat(document.getElementById('exam-obtained').value);
+                const total = parseFloat(document.getElementById('exam-total').value);
+
+                if (obtained > total) {
+                    showToast("Obtained marks cannot exceed maximum marks.", "error");
+                    return;
+                }
+
+                const payload = {
+                    id: `EXM-${Date.now()}`,
+                    studentId: document.getElementById('exam-student-id').value,
+                    term: document.getElementById('exam-term').value,
+                    subject: document.getElementById('exam-subject').value.trim(),
+                    obtained,
+                    total
+                };
+
+                window.appState.exams.push(payload);
+                closeModal('exam-modal');
+                await window.persistState();
+                showToast("Examination result published!", "success");
+            });
+
+            // 6. Settings Form
+            document.getElementById('settings-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                window.appState.settings.schoolName = document.getElementById('setting-school-name').value.trim();
+                window.appState.settings.session = document.getElementById('setting-session').value.trim();
+                window.appState.settings.phone = document.getElementById('setting-phone').value.trim();
+                window.appState.settings.email = document.getElementById('setting-email').value.trim();
+                window.appState.settings.address = document.getElementById('setting-address').value.trim();
+                await window.persistState();
+                showToast("Institutional settings updated!", "success");
+            });
+        }
+
+        // ==================== UTILITIES: MODALS & TOASTS ====================
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const colors = {
+                success: 'border-emerald-500/40 bg-slate-900/95 text-emerald-300',
+                error: 'border-rose-500/40 bg-slate-900/95 text-rose-300',
+                info: 'border-cyan-500/40 bg-slate-900/95 text-cyan-300'
+            };
+            const icons = { success: 'check-circle', error: 'alert-circle', info: 'info' };
+
+            toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3.5 rounded-xl border shadow-2xl backdrop-blur-md text-sm font-medium transition-all transform translate-y-0 ${colors[type] || colors.info}`;
+            toast.innerHTML = `<i data-lucide="${icons[type] || 'info'}" class="w-4 h-4 shrink-0"></i><span>${message}</span>`;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-10px)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
+        function showConfirmModal(title, message, onConfirm) {
+            const modal = document.getElementById('confirm-modal');
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-message').textContent = message;
+
+            const okBtn = document.getElementById('confirm-ok-btn');
+            const cancelBtn = document.getElementById('confirm-cancel-btn');
+
+            const cleanup = () => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                okBtn.onclick = null;
+                cancelBtn.onclick = null;
+            };
+
+            okBtn.onclick = () => {
+                cleanup();
+                onConfirm();
+            };
+            cancelBtn.onclick = cleanup;
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    </script>
+</body>
+</html>
